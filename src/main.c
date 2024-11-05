@@ -11,6 +11,7 @@
 
 #include "ast.h"
 #include "mempool.h"
+#include "node.h"
 
 #define IMAGE_SIZE 512
 
@@ -35,11 +36,14 @@ static void _writePPM(const char *FILENAME, int w, int h, byte *data) {
 static void _usage(void) {
 	printf("RandomArt generator\n\n");
 	printf("usage: randomart [OPTIONS]\n");
-	printf("       -h, --help..... Display this help text\n");
-	printf("       -o, --output... Output filename (default: 'image.ppm')\n");
-	printf("       -s, --seed..... Seed to use (default: random)\n");
-	printf("       -S, --size..... Size of the image (default: 512)\n");
-	printf("       -q, --quiet.... Don't print the generator function\n");
+	printf("       -h, --help....... Display this help text\n");
+	printf("       -o, --output..... Output filename (default: 'image.ppm')\n");
+	printf("       -r, --recdepth... Sets the maximum recursion depth\n");
+	printf("                         Note: this will probably segfault if\n");
+	printf("                         set too high (default: 6)\n");
+	printf("       -s, --seed....... Seed to use (default: random)\n");
+	printf("       -S, --size....... Size of the image (default: 512)\n");
+	printf("       -q, --quiet...... Don't print the generator function\n");
 }
 
 #define NEXT()                                                                 \
@@ -53,11 +57,7 @@ static bool _isOpt(int argc, char *argv[], char argS, char *argL) {
 		exit(EXIT_FAILURE);
 	}
 
-	if( cmd[1] != argS ) {
-		return false;
-	}
-
-	if( cmd[2] == '\0' ) {
+	if( cmd[1] == argS && cmd[2] == '\0' ) {
 		return true;
 	}
 
@@ -79,6 +79,7 @@ int main(int argc, char *argv[]) {
 	char *file = "image.ppm";
 	int size = IMAGE_SIZE;
 
+	unsigned maxrec = 6;
 	bool quiet = false;
 
 	NEXT();
@@ -90,6 +91,10 @@ int main(int argc, char *argv[]) {
 		else CHECK('o', "output") {
 			EXPECT("filename");
 			file = *argv;
+		}
+		else CHECK('r', "recdepth") {
+			EXPECT("recursion depth");
+			maxrec = strtoul(*argv, NULL, 10);
 		}
 		else CHECK('s', "seed") {
 			EXPECT("seed");
@@ -107,6 +112,7 @@ int main(int argc, char *argv[]) {
 	}
 
 	srand(seed);
+	nodeSetup(maxrec);
 
 	byte *image = astGenerateArt(size, size, quiet);
 	_writePPM(file, size, size, image);

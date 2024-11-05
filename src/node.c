@@ -9,10 +9,16 @@
 
 #include "node.h"
 
+static unsigned _maxrec = 0;
+
 /* Generates a random number in the range [-1, 1] */
 static double _randNumber(void) {
 	double num = (double)rand();
 	return 2.0 * (num / RAND_MAX) - 1.0;
+}
+
+void nodeSetup(unsigned maxrec) {
+	_maxrec = maxrec;
 }
 
 Node *nodeNew(NodeType type, MemPool *pool) {
@@ -187,7 +193,7 @@ static Node *_getShader(MemPool *pool, int *rec) {
 }
 
 Node *nodeCreateRandom(MemPool *pool, int rec) {
-	if( rec > 6 ) {
+	if( rec > _maxrec ) {
 		return _getValue(pool);
 	}
 

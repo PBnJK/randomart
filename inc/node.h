@@ -88,6 +88,8 @@ typedef struct _Node {
 #define NODE_RGB(A, B, C) nodeCreateABC(NT_RGB, (A), (B), (C), pool)
 #define NODE_MIX(A, B, C) nodeCreateABC(NT_MIX, (A), (B), (C), pool)
 
+void nodeSetup(unsigned maxrec);
+
 Node *newNode(NodeType type, MemPool *pool);
 
 Node *nodeCreateNumber(double number, MemPool *pool);
