@@ -7,7 +7,7 @@
 #include <stdlib.h>
 #include <time.h>
 
-typedef uint8_t byte;
+#include "mempool.h"
 
 #define IMAGE_SIZE 512
 
@@ -47,27 +47,8 @@ typedef struct _Node {
 	struct _Node *a, *b, *c;
 } Node;
 
-#define POOL_START_SIZE (256 * sizeof(Node))
-typedef struct _MemPool {
-	byte *start, *next, *end;
-} MemPool;
-
-static MemPool *_poolNew(void) {
-	MemPool *pool = malloc(POOL_START_SIZE);
-	pool->next = (byte *)&pool[1];
-	pool->end = pool->next + POOL_START_SIZE;
-
-	return pool;
-}
-
-static void *_poolAlloc(MemPool *pool, int size) {
-	void *mem = (void *)pool->next;
-	pool->next += size;
-	return mem;
-}
-
 static Node *_newNode(NodeType type, MemPool *pool) {
-	Node *node = _poolAlloc(pool, sizeof(*node));
+	Node *node = poolAlloc(pool, sizeof(*node));
 
 	node->type = type;
 
@@ -223,22 +204,22 @@ static Node *_runAST(Node *ast, double x, double y, MemPool *pool) {
 
 static byte *_interpretAST(Node *ast, int w, int h) {
 	byte *image = malloc(w * h * 3);
-	MemPool *vmPool = _poolNew();
+	MemPool vmPool = poolNew();
 
 	int i = 0;
 	for( int y = 0; y < h; ++y ) {
 		for( int x = 0; x < w; ++x ) {
-			Node *node = _runAST(ast, XY_INT(x), XY_INT(y), vmPool);
+			Node *node = _runAST(ast, XY_INT(x), XY_INT(y), &vmPool);
 			image[i++] = INT_C(node->a->num);
 			image[i++] = INT_C(node->b->num);
 			image[i++] = INT_C(node->c->num);
 
-			free(vmPool);
-			vmPool = _poolNew();
+			poolFree(&vmPool);
+			vmPool = poolNew();
 		}
 	}
 
-	free(vmPool);
+	poolFree(&vmPool);
 
 	return image;
 }
@@ -347,12 +328,12 @@ static void _writePPM(const char *FILENAME, int w, int h, byte *data) {
 int main(int argc, char *argv[]) {
 	srand(time(NULL));
 
-	MemPool *astPool = _poolNew();
-	byte *image = _generateRandomArt(IMAGE_SIZE, IMAGE_SIZE, astPool);
+	MemPool astPool = poolNew();
+	byte *image = _generateRandomArt(IMAGE_SIZE, IMAGE_SIZE, &astPool);
 
 	_writePPM("image.ppm", IMAGE_SIZE, IMAGE_SIZE, image);
 
-	free(astPool);
+	poolFree(&astPool);
 	free(image);
 
 	return EXIT_SUCCESS;

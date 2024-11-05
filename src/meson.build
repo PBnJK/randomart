@@ -1,1 +1,1 @@
-src = files('main.c')
+src = files('main.c', 'mempool.c')
