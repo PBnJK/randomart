@@ -13,9 +13,11 @@ for a proper explanation, but the tl;dr of the algorithm is:
 
 <center>
 	<figure>
-		<img alt="Colorful output of the RandomArt algorithm" src="example.png">
+		<img alt="Colorful output of the RandomArt algorithm" src="examples/example.png">
 		<figcaption>Generated through the following function:<br>rgb(x, mul(x, mul(add(y, add(add(y, y), mul(y, y))), 0.451108)), add(x, add(add(mul(x, y), mul(y, y)), x)))</figcaption>
 	</figure>
 </center>
 
 XY coordinates and RGB color values are expected to be in the range [-1, 1].
+
+Check `examples.md` for some nifty example images!
