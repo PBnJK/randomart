@@ -5,7 +5,7 @@
 
 typedef uint8_t byte;
 
-#define POOL_SIZE 8192
+#define POOL_SIZE 1024
 
 typedef struct _MemRegion {
 	struct _MemRegion *next;
