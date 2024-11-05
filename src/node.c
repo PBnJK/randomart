@@ -12,7 +12,7 @@
 /* Generates a random number in the range [-1, 1] */
 static double _randNumber(void) {
 	double num = (double)rand();
-	return 2 * (num / RAND_MAX) - 1;
+	return 2.0 * (num / RAND_MAX) - 1.0;
 }
 
 Node *nodeNew(NodeType type, MemPool *pool) {
@@ -60,14 +60,16 @@ Node *nodeCreateABC(NodeType type, Node *a, Node *b, Node *c, MemPool *pool) {
 	return node;
 }
 
-#define VALUE_CHANCE 40
-#define ARITH_CHANCE 46
-#define TRIG_CHANCE 6
-#define COND_CHANCE 2
-#define MISC_CHANCE 6
+#define VALUE_CHANCE 20
+#define ARITH_CHANCE 20
+#define TRIG_CHANCE 20
+#define EXP_CHANCE 10
+#define COMMON_CHANCE 10
+#define COND_CHANCE 10
+#define SHADER_CHANCE 10
 
-static_assert(
-	VALUE_CHANCE + ARITH_CHANCE + TRIG_CHANCE + COND_CHANCE + MISC_CHANCE
+static_assert(VALUE_CHANCE + ARITH_CHANCE + TRIG_CHANCE + EXP_CHANCE
+			+ COMMON_CHANCE + COND_CHANCE + SHADER_CHANCE
 		== 100,
 	"chances must add up to 100%");
 
@@ -102,11 +104,42 @@ static Node *_getArith(MemPool *pool, int *rec) {
 static Node *_getTrig(MemPool *pool, int *rec) {
 	*rec += 1;
 
-	if( rand() % 2 ) {
+	switch( rand() % 2 ) {
+	case 0:
 		return NODE_SIN(NODE_RANDOM(*rec));
 	}
 
 	return NODE_COS(NODE_RANDOM(*rec));
+}
+
+static Node *_getExp(MemPool *pool, int *rec) {
+	*rec += 1;
+
+	switch( rand() % 3 ) {
+	case 0:
+		return NODE_EXP(NODE_RANDOM(*rec));
+	case 1:
+		return NODE_LOG(NODE_RANDOM(*rec));
+	}
+
+	return NODE_SQRT(NODE_RANDOM(*rec));
+}
+
+static Node *_getCommon(MemPool *pool, int *rec) {
+	switch( rand() % 4 ) {
+	case 0:
+		*rec -= 1;
+		return NODE_ABS(NODE_RANDOM(*rec));
+	case 1:
+		*rec += 2;
+		return NODE_MIN(NODE_RANDOM(*rec), NODE_RANDOM(*rec));
+	case 2:
+		*rec += 2;
+		return NODE_MAX(NODE_RANDOM(*rec), NODE_RANDOM(*rec));
+	}
+
+	*rec += 2;
+	return NODE_FRACT(NODE_RANDOM(*rec));
 }
 
 static Node *_getCond(MemPool *pool, int *rec) {
@@ -141,6 +174,18 @@ static Node *_getCond(MemPool *pool, int *rec) {
 	);
 }
 
+static Node *_getShader(MemPool *pool, int *rec) {
+	*rec += 3;
+
+	switch( rand() % 2 ) {
+	case 0:
+		return NODE_RGB(
+			NODE_RANDOM(*rec), NODE_RANDOM(*rec), NODE_RANDOM(*rec));
+	}
+
+	return NODE_MIX(NODE_RANDOM(*rec), NODE_RANDOM(*rec), NODE_RANDOM(*rec));
+}
+
 Node *nodeCreateRandom(MemPool *pool, int rec) {
 	if( rec > 6 ) {
 		return _getValue(pool);
@@ -162,10 +207,20 @@ Node *nodeCreateRandom(MemPool *pool, int rec) {
 	}
 	r -= TRIG_CHANCE;
 
+	if( r < EXP_CHANCE ) {
+		return _getExp(pool, &rec);
+	}
+	r -= EXP_CHANCE;
+
+	if( r < COMMON_CHANCE ) {
+		return _getCommon(pool, &rec);
+	}
+	r -= COMMON_CHANCE;
+
 	if( r < COND_CHANCE ) {
 		return _getCond(pool, &rec);
 	}
 	r -= COND_CHANCE;
 
-	return NODE_RGB(NODE_RANDOM(rec), NODE_RANDOM(rec), NODE_RANDOM(rec));
+	return _getShader(pool, &rec);
 }

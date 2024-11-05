@@ -20,6 +20,17 @@ typedef enum _NodeType {
 	NT_SIN, /* sin A */
 	NT_COS, /* cos A */
 
+	/* Exponential */
+	NT_EXP, /* exp A */
+	NT_LOG, /* log A */
+	NT_SQRT, /* sqrt A */
+
+	/* Common */
+	NT_ABS, /* abs A */
+	NT_MIN, /* min(A, B) */
+	NT_MAX, /* max(A, B) */
+	NT_FRACT, /* A - floor(A) */
+
 	/* Conditionals */
 	NT_IF, /* A ? B : C */
 	NT_LT, /* A < B */
@@ -29,8 +40,9 @@ typedef enum _NodeType {
 	NT_EQ, /* A == B */
 	NT_NEQ, /* A != B */
 
-	/* Misc. */
+	/* Shader */
 	NT_RGB, /* rgb(A, B, C) */
+	NT_MIX, /* lerp(A, B, C) */
 } NodeType;
 
 typedef struct _Node {
@@ -55,6 +67,15 @@ typedef struct _Node {
 #define NODE_SIN(A) nodeCreateA(NT_SIN, (A), pool)
 #define NODE_COS(A) nodeCreateA(NT_COS, (A), pool)
 
+#define NODE_EXP(A) nodeCreateA(NT_EXP, (A), pool)
+#define NODE_LOG(A) nodeCreateA(NT_LOG, (A), pool)
+#define NODE_SQRT(A) nodeCreateA(NT_SQRT, (A), pool)
+
+#define NODE_ABS(A) nodeCreateA(NT_ABS, (A), pool)
+#define NODE_MIN(A, B) nodeCreateAB(NT_MIN, (A), (B), pool)
+#define NODE_MAX(A, B) nodeCreateAB(NT_MAX, (A), (B), pool)
+#define NODE_FRACT(A) nodeCreateA(NT_FRACT, (A), pool)
+
 #define NODE_IF(A, B, C) nodeCreateABC(NT_IF, (A), (B), (C), pool)
 #define NODE_COND(T, A, B) nodeCreateAB((T), (A), (B), pool)
 #define NODE_LT(A, B) nodeCreateAB(NT_LT, (A), (B), pool)
@@ -65,6 +86,7 @@ typedef struct _Node {
 #define NODE_NEQ(A, B) nodeCreateAB(NT_NEQ, (A), (B), pool)
 
 #define NODE_RGB(A, B, C) nodeCreateABC(NT_RGB, (A), (B), (C), pool)
+#define NODE_MIX(A, B, C) nodeCreateABC(NT_MIX, (A), (B), (C), pool)
 
 Node *newNode(NodeType type, MemPool *pool);
 

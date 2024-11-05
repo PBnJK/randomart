@@ -3,15 +3,22 @@
  */
 
 #include <math.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include "mempool.h"
 #include "node.h"
 
 #include "ast.h"
 
+static double _mix(double x, double y, double a) {
+	return x * (1.0 - a) + y * a;
+}
+
 #define RUN(S) (_runAST((S), x, y, pool))
+#define RUNN(S) (_runAST((S), x, y, pool)->num)
 
 #define COND(S) ((RUN(ast->a) S RUN(ast->b)) ? NODE_NUM(1) : NODE_NUM(-1))
 #define ARITH(O) (NODE_NUM(RUN(ast->a)->num O RUN(ast->b)->num))
@@ -37,13 +44,29 @@ static Node *_runAST(Node *ast, double x, double y, MemPool *pool) {
 	case NT_DIV:
 		return ARITH(/);
 	case NT_MOD:
-		return NODE_NUM(fmod(RUN(ast->a)->num, RUN(ast->b)->num));
+		return NODE_NUM(fmod(RUNN(ast->a), RUNN(ast->b)));
 	case NT_SIN:
-		return NODE_NUM(sin(RUN(ast->a)->num));
+		return NODE_NUM(sin(RUNN(ast->a)));
 	case NT_COS:
-		return NODE_NUM(sin(RUN(ast->a)->num));
+		return NODE_NUM(sin(RUNN(ast->a)));
+	case NT_EXP:
+		return NODE_NUM(exp(RUNN(ast->a)));
+	case NT_LOG:
+		return NODE_NUM(log(RUNN(ast->a)));
+	case NT_SQRT:
+		return NODE_NUM(sqrt(RUNN(ast->a)));
+	case NT_ABS:
+		return NODE_NUM(fabs(RUNN(ast->a)));
+	case NT_MIN:
+		return NODE_NUM(fmin(RUNN(ast->a), RUNN(ast->b)));
+	case NT_MAX:
+		return NODE_NUM(fmax(RUNN(ast->a), RUNN(ast->b)));
+	case NT_FRACT: {
+		double n = RUNN(ast->a);
+		return NODE_NUM(n - floor(n));
+	}
 	case NT_IF:
-		return (RUN(ast->a) > 0) ? RUN(ast->b) : RUN(ast->c);
+		return (RUNN(ast->a) > 0) ? RUN(ast->b) : RUN(ast->c);
 	case NT_LT:
 		return COND(<);
 	case NT_LTEQ:
@@ -58,6 +81,8 @@ static Node *_runAST(Node *ast, double x, double y, MemPool *pool) {
 		return COND(!=);
 	case NT_RGB:
 		return NODE_RGB(RUN(ast->a), RUN(ast->b), RUN(ast->c));
+	case NT_MIX:
+		return NODE_NUM(_mix(RUNN(ast->a), RUNN(ast->b), RUNN(ast->c)));
 	}
 
 	return ast;
@@ -67,7 +92,7 @@ static Node *_runAST(Node *ast, double x, double y, MemPool *pool) {
 #define X_INT (2 * ((double)(x) / w) - 1)
 #define Y_INT (2 * ((double)(y) / h) - 1)
 
-/* RGB from intensity */
+/* RGB from intensity ([-1, 1] -> [0, 255]) */
 #define INT_C(C) ((int)((((C) + 1) / 2) * 255))
 
 byte *astRun(Node *ast, int w, int h) {
@@ -92,9 +117,9 @@ byte *astRun(Node *ast, int w, int h) {
 	return image;
 }
 
-#define F(N) printf("%s(", N)
-#define P(A) astPrint((A))
-#define COMMA printf(", ")
+#define F(N) printf("(%s ", N)
+#define P(A) _astPrint((A))
+#define SPACE printf(" ")
 #define ENDF printf(")")
 
 #define UNARY()                                                                \
@@ -105,22 +130,27 @@ byte *astRun(Node *ast, int w, int h) {
 #define BINARY()                                                               \
 	F(BINARY_NAME_TABLE[ast->type]);                                           \
 	P(ast->a);                                                                 \
-	COMMA;                                                                     \
+	SPACE;                                                                     \
 	P(ast->b);                                                                 \
 	ENDF
 
 #define TERNARY()                                                              \
 	F(TERNARY_NAME_TABLE[ast->type]);                                          \
 	P(ast->a);                                                                 \
-	COMMA;                                                                     \
+	SPACE;                                                                     \
 	P(ast->b);                                                                 \
-	COMMA;                                                                     \
+	SPACE;                                                                     \
 	P(ast->c);                                                                 \
 	ENDF
 
 static const char *UNARY_NAME_TABLE[] = {
 	[NT_SIN] = "sin",
 	[NT_COS] = "cos",
+	[NT_EXP] = "exp",
+	[NT_LOG] = "log",
+	[NT_SQRT] = "sqrt",
+	[NT_ABS] = "abs",
+	[NT_FRACT] = "fract",
 };
 
 static const char *BINARY_NAME_TABLE[] = {
@@ -129,6 +159,8 @@ static const char *BINARY_NAME_TABLE[] = {
 	[NT_MUL] = "mul",
 	[NT_DIV] = "div",
 	[NT_MOD] = "mod",
+	[NT_MIN] = "min",
+	[NT_MAX] = "max",
 	[NT_LT] = "<",
 	[NT_LTEQ] = "<=",
 	[NT_GT] = ">",
@@ -140,9 +172,10 @@ static const char *BINARY_NAME_TABLE[] = {
 static const char *TERNARY_NAME_TABLE[] = {
 	[NT_IF] = "if",
 	[NT_RGB] = "rgb",
+	[NT_MIX] = "mix",
 };
 
-void astPrint(Node *ast) {
+static void _astPrint(Node *ast) {
 	if( ast == NULL ) {
 		return;
 	}
@@ -159,6 +192,11 @@ void astPrint(Node *ast) {
 		break;
 	case NT_SIN:
 	case NT_COS:
+	case NT_EXP:
+	case NT_LOG:
+	case NT_ABS:
+	case NT_SQRT:
+	case NT_FRACT:
 		UNARY();
 		break;
 	case NT_ADD:
@@ -166,6 +204,8 @@ void astPrint(Node *ast) {
 	case NT_MUL:
 	case NT_DIV:
 	case NT_MOD:
+	case NT_MIN:
+	case NT_MAX:
 	case NT_LT:
 	case NT_LTEQ:
 	case NT_GT:
@@ -176,20 +216,29 @@ void astPrint(Node *ast) {
 		break;
 	case NT_IF:
 	case NT_RGB:
+	case NT_MIX:
 		TERNARY();
 		break;
 	}
+}
+
+void astPrint(Node *ast) {
+	_astPrint(ast);
+	printf("\n");
 }
 
 Node *astCreate(MemPool *pool) {
 	return NODE_RGB(NODE_RANDOM(0), NODE_RANDOM(0), NODE_RANDOM(0));
 }
 
-byte *astGenerateArt(int w, int h) {
+byte *astGenerateArt(int w, int h, bool quiet) {
 	MemPool pool = poolNew();
 
 	Node *ast = astCreate(&pool);
-	astPrint(ast);
+	if( !quiet ) {
+		astPrint(ast);
+	}
+
 	byte *image = astRun(ast, w, h);
 
 	poolFree(&pool);
