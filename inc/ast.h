@@ -7,18 +7,15 @@
 #include "node.h"
 
 /* Runs a created AST, returning an array of RGB triples (the image) */
-byte *astRun(Node *ast, int w, int h);
+byte *astDoFrame(Node *ast, int w, int h, double t);
 
 /* Prints the AST as a lisp-like line */
 void astPrint(Node *ast);
 
-/* Randomly creates a list */
+/* Randomly creates an AST */
 Node *astCreate(MemPool *pool);
 
-/* Draws the list as a nice ASCII art image :-O */
-void astDraw(Node *ast);
-
-/* Does all of the above stuff (create; print; run;) returning the image */
-byte *astGenerateArt(int w, int h, bool quiet);
+/* Injects a T member into an AST */
+bool astInjectT(Node *ast);
 
 #endif // !GUARD_RANDOMART_AST_H_

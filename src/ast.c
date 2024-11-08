@@ -17,13 +17,13 @@ static double _mix(double x, double y, double a) {
 	return x * (1.0 - a) + y * a;
 }
 
-#define RUN(S) (_runAST((S), x, y, pool))
-#define RUNN(S) (_runAST((S), x, y, pool)->num)
+#define RUN(S) (_runAST((S), x, y, t, pool))
+#define RUNN(S) (_runAST((S), x, y, t, pool)->num)
 
 #define COND(S) ((RUN(ast->a) S RUN(ast->b)) ? NODE_NUM(1) : NODE_NUM(-1))
 #define ARITH(O) (NODE_NUM(RUN(ast->a)->num O RUN(ast->b)->num))
 
-static Node *_runAST(Node *ast, double x, double y, MemPool *pool) {
+static Node *_runAST(Node *ast, double x, double y, double t, MemPool *pool) {
 	switch( ast->type ) {
 	case NT_NUM:
 		return ast;
@@ -31,6 +31,8 @@ static Node *_runAST(Node *ast, double x, double y, MemPool *pool) {
 		return NODE_NUM(x);
 	case NT_Y:
 		return NODE_NUM(y);
+	case NT_T:
+		return NODE_NUM(t);
 	case NT_ADD:
 		return ARITH(+);
 	case NT_SUB:
@@ -91,7 +93,7 @@ static Node *_runAST(Node *ast, double x, double y, MemPool *pool) {
 /* RGB from intensity ([-1, 1] -> [0, 255]) */
 #define INT_C(C) ((int)((((C) + 1) / 2) * 255))
 
-byte *astRun(Node *ast, int w, int h) {
+byte *astDoFrame(Node *ast, int w, int h, double t) {
 	byte *image = malloc(w * h * 3);
 	MemPool vmPool;
 
@@ -100,7 +102,7 @@ byte *astRun(Node *ast, int w, int h) {
 		vmPool = poolNew();
 
 		for( int x = 0; x < w; ++x ) {
-			Node *node = _runAST(ast, X_INT, Y_INT, &vmPool);
+			Node *node = _runAST(ast, X_INT, Y_INT, t, &vmPool);
 			image[i++] = INT_C(node->a->num);
 			image[i++] = INT_C(node->b->num);
 			image[i++] = INT_C(node->c->num);
@@ -181,6 +183,9 @@ static void _astPrint(Node *ast) {
 	case NT_Y:
 		printf("y");
 		break;
+	case NT_T:
+		printf("t");
+		break;
 	case NT_SIN:
 	case NT_COS:
 	case NT_EXP:
@@ -239,10 +244,12 @@ static void _optimize(MemPool *pool, Node *parent, Node *ast) {
 	case NT_NUM:
 	case NT_X:
 	case NT_Y:
+	case NT_T:
 		break;
+	case NT_MIX:
+		_optimize(pool, ast, ast->c);
 	case NT_MIN:
 	case NT_MAX:
-	case NT_MIX:
 		_optimize(pool, ast, ast->b);
 		_optimize(pool, ast, ast->a);
 		if( _areEqual(ast->a, ast->b) ) {
@@ -301,17 +308,45 @@ Node *astCreate(MemPool *pool) {
 	return ast;
 }
 
-byte *astGenerateArt(int w, int h, bool quiet) {
-	MemPool pool = poolNew();
-
-	Node *ast = astCreate(&pool);
-	if( !quiet ) {
-		astPrint(ast);
+bool astInjectT(Node *ast) {
+	switch( ast->type ) {
+	case NT_NUM:
+	case NT_X:
+	case NT_Y:
+		ast->type = NT_T;
+	case NT_T:
+		return true;
+	case NT_IF:
+	case NT_RGB:
+	case NT_MIX:
+		if( astInjectT(ast->c) ) {
+			return true;
+		}
+	case NT_MIN:
+	case NT_MAX:
+	case NT_ADD:
+	case NT_SUB:
+	case NT_MUL:
+	case NT_DIV:
+	case NT_MOD:
+	case NT_LT:
+	case NT_LTEQ:
+	case NT_GT:
+	case NT_GTEQ:
+	case NT_EQ:
+	case NT_NEQ:
+		if( astInjectT(ast->b) ) {
+			return true;
+		}
+	case NT_SIN:
+	case NT_COS:
+	case NT_EXP:
+	case NT_LOG:
+	case NT_SQRT:
+	case NT_ABS:
+	case NT_FRACT:
+		return astInjectT(ast->a);
 	}
 
-	byte *image = astRun(ast, w, h);
-
-	poolFree(&pool);
-
-	return image;
+	return false;
 }

@@ -8,6 +8,7 @@ typedef enum _NodeType {
 	NT_NUM, /* Number */
 	NT_X, /* X coordinate */
 	NT_Y, /* Y coordinate */
+	NT_T, /* T member */
 
 	/* Arithmetic */
 	NT_ADD, /* A + B */
