@@ -218,8 +218,87 @@ void astPrint(Node *ast) {
 	printf("\n");
 }
 
+static bool _areEqual(Node *l, Node *r) {
+	if( l->type != r->type ) {
+		return false;
+	}
+
+	switch( l->type ) {
+	case NT_NUM:
+		return l->num == r->num;
+	case NT_X:
+	case NT_Y:
+		return true;
+	default:
+		return false;
+	}
+}
+
+static void _optimize(MemPool *pool, Node *parent, Node *ast) {
+	switch( ast->type ) {
+	case NT_NUM:
+	case NT_X:
+	case NT_Y:
+		break;
+	case NT_MIN:
+	case NT_MAX:
+	case NT_MIX:
+		_optimize(pool, ast, ast->b);
+		_optimize(pool, ast, ast->a);
+		if( _areEqual(ast->a, ast->b) ) {
+			*ast = *ast->a;
+		}
+		break;
+	case NT_ADD:
+	case NT_SUB:
+	case NT_MUL:
+	case NT_DIV:
+	case NT_MOD:
+		_optimize(pool, ast, ast->b);
+	case NT_SIN:
+	case NT_COS:
+	case NT_EXP:
+	case NT_LOG:
+	case NT_SQRT:
+	case NT_ABS:
+	case NT_FRACT:
+		_optimize(pool, ast, ast->a);
+		break;
+	case NT_LT:
+	case NT_LTEQ:
+	case NT_GT:
+	case NT_GTEQ:
+	case NT_EQ:
+	case NT_NEQ:
+		_optimize(pool, ast, ast->b);
+		_optimize(pool, ast, ast->a);
+		if( _areEqual(ast->a, ast->b) ) {
+			*parent = *parent->b;
+		}
+		break;
+	case NT_IF:
+		if( _areEqual(ast->b, ast->c) ) {
+			*ast = *ast->b;
+			break;
+		}
+
+		_optimize(pool, ast, ast->c);
+		_optimize(pool, ast, ast->b);
+		_optimize(pool, ast, ast->a);
+		break;
+	case NT_RGB:
+		_optimize(pool, ast, ast->c);
+		_optimize(pool, ast, ast->b);
+		_optimize(pool, ast, ast->a);
+		break;
+	}
+}
+
 Node *astCreate(MemPool *pool) {
-	return NODE_RGB(NODE_RANDOM(0), NODE_RANDOM(0), NODE_RANDOM(0));
+	Node *ast = NODE_RGB(NODE_RANDOM(0), NODE_RANDOM(0), NODE_RANDOM(0));
+	_optimize(pool, NULL, ast);
+
+	return ast;
 }
 
 byte *astGenerateArt(int w, int h, bool quiet) {
