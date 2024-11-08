@@ -23,14 +23,7 @@ void nodeSetup(unsigned maxrec) {
 
 Node *nodeNew(NodeType type, MemPool *pool) {
 	Node *node = poolAlloc(pool, sizeof(*node));
-
 	node->type = type;
-
-	node->a = NULL;
-	node->b = NULL;
-	node->c = NULL;
-
-	node->num = 0.0;
 
 	return node;
 }

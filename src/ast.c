@@ -24,10 +24,6 @@ static double _mix(double x, double y, double a) {
 #define ARITH(O) (NODE_NUM(RUN(ast->a)->num O RUN(ast->b)->num))
 
 static Node *_runAST(Node *ast, double x, double y, MemPool *pool) {
-	if( ast == NULL ) {
-		return NULL;
-	}
-
 	switch( ast->type ) {
 	case NT_NUM:
 		return ast;
@@ -97,22 +93,21 @@ static Node *_runAST(Node *ast, double x, double y, MemPool *pool) {
 
 byte *astRun(Node *ast, int w, int h) {
 	byte *image = malloc(w * h * 3);
-	MemPool vmPool = poolNew();
+	MemPool vmPool;
 
 	int i = 0;
 	for( int y = 0; y < h; ++y ) {
+		vmPool = poolNew();
+
 		for( int x = 0; x < w; ++x ) {
 			Node *node = _runAST(ast, X_INT, Y_INT, &vmPool);
 			image[i++] = INT_C(node->a->num);
 			image[i++] = INT_C(node->b->num);
 			image[i++] = INT_C(node->c->num);
-
-			poolFree(&vmPool);
-			vmPool = poolNew();
 		}
-	}
 
-	poolFree(&vmPool);
+		poolFree(&vmPool);
+	}
 
 	return image;
 }
@@ -176,10 +171,6 @@ static const char *TERNARY_NAME_TABLE[] = {
 };
 
 static void _astPrint(Node *ast) {
-	if( ast == NULL ) {
-		return;
-	}
-
 	switch( ast->type ) {
 	case NT_NUM:
 		printf("%g", ast->num);
