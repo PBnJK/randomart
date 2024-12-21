@@ -17,3 +17,7 @@ upon by just re-running the tool a bunch.
 ## Four Corners
 `rgb(add(y, rgb(sub(cos(mod(x, 0.357165)), y), sub(div(y, 0.405363), sin(-0.880661)), div(-0.125798, sub(add(-0.0566517, y), y)))), mul(x, y), rgb(mod(cos(y), add(x, x)), mod(y, y), y))`
 <center><img alt="image of a four-corner gradient" src="examples/four_corners.png"></center>
+
+## Vaporwave
+`f(x, y) = (rgb (sub (abs (exp (fract (abs (log x))))) 0.152519) (sqrt (mix (sqrt (min -0.54487 -0.0263508)) (exp (max -0.537712 x)) (cos (mod y -0.110695)))) (max (max (sqrt (sub x y)) (min (cos x) (abs -0.639572))) (sin (abs(log (fract (add x y)))))))`
+<center><img alt="image that's kind of 3D, in blues and reds" src="examples/vaporwave.png"></center>

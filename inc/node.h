@@ -56,8 +56,9 @@ typedef struct _Node {
 #define NODE_RANDOM(C) nodeCreateRandom(pool, (C))
 
 #define NODE_NUM(N) nodeCreateNumber((N), pool)
-#define NODE_X() NODE(NT_X, pool)
-#define NODE_Y() NODE(NT_Y, pool)
+#define NODE_X() NODE(NT_X)
+#define NODE_Y() NODE(NT_Y)
+#define NODE_T() NODE(NT_T)
 
 #define NODE_ADD(A, B) nodeCreateAB(NT_ADD, (A), (B), pool)
 #define NODE_SUB(A, B) nodeCreateAB(NT_SUB, (A), (B), pool)
@@ -89,9 +90,10 @@ typedef struct _Node {
 #define NODE_RGB(A, B, C) nodeCreateABC(NT_RGB, (A), (B), (C), pool)
 #define NODE_MIX(A, B, C) nodeCreateABC(NT_MIX, (A), (B), (C), pool)
 
-void nodeSetup(unsigned maxrec);
+void nodeSetup(unsigned maxrec, unsigned val, unsigned arith, unsigned trig,
+	unsigned exp, unsigned common, unsigned cond);
 
-Node *newNode(NodeType type, MemPool *pool);
+Node *nodeNew(NodeType type, MemPool *pool);
 
 Node *nodeCreateNumber(double number, MemPool *pool);
 

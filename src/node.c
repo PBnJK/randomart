@@ -3,6 +3,7 @@
  */
 
 #include <assert.h>
+#include <stdio.h>
 #include <stdlib.h>
 
 #include "mempool.h"
@@ -17,8 +18,26 @@ static double _randNumber(void) {
 	return 2.0 * (num / RAND_MAX) - 1.0;
 }
 
-void nodeSetup(unsigned maxrec) {
+static unsigned _valueChance, _arithChance, _trigChance, _expChance,
+	_commonChance, _condChance;
+
+void nodeSetup(unsigned maxrec, unsigned val, unsigned arith, unsigned trig,
+	unsigned exp, unsigned common, unsigned cond) {
 	_maxrec = maxrec;
+
+	_valueChance = val;
+	_arithChance = arith;
+	_trigChance = trig;
+	_expChance = exp;
+	_commonChance = common;
+	_condChance = cond;
+
+	if( _valueChance + _arithChance + _trigChance + _expChance + _commonChance
+			+ _condChance
+		!= 100 ) {
+		printf("chances must add up to 100%%\n");
+		exit(EXIT_FAILURE);
+	}
 }
 
 Node *nodeNew(NodeType type, MemPool *pool) {
@@ -59,34 +78,26 @@ Node *nodeCreateABC(NodeType type, Node *a, Node *b, Node *c, MemPool *pool) {
 	return node;
 }
 
-#define VALUE_CHANCE 20
-#define ARITH_CHANCE 20
-#define TRIG_CHANCE 20
-#define EXP_CHANCE 10
-#define COMMON_CHANCE 10
-#define COND_CHANCE 10
-#define SHADER_CHANCE 10
-
-static_assert(VALUE_CHANCE + ARITH_CHANCE + TRIG_CHANCE + EXP_CHANCE
-			+ COMMON_CHANCE + COND_CHANCE + SHADER_CHANCE
-		== 100,
-	"chances must add up to 100%");
+/* Gets a random number in range [0, n[ */
+static int _randN(int n) {
+	return rand() % n;
+}
 
 static Node *_getValue(MemPool *pool) {
-	switch( rand() % 5 ) {
+	switch( _randN(3) ) {
 	case 0:
 		return NODE_NUM(_randNumber());
 	case 1:
-		return NODE(NT_X);
+		return NODE_X();
 	}
 
-	return NODE(NT_Y);
+	return NODE_Y();
 }
 
 static Node *_getArith(MemPool *pool, int *rec) {
 	*rec += 2;
 
-	switch( rand() % 5 ) {
+	switch( _randN(5) ) {
 	case 0:
 		return NODE_ADD(NODE_RANDOM(*rec), NODE_RANDOM(*rec));
 	case 1:
@@ -103,7 +114,7 @@ static Node *_getArith(MemPool *pool, int *rec) {
 static Node *_getTrig(MemPool *pool, int *rec) {
 	*rec += 1;
 
-	switch( rand() % 2 ) {
+	switch( _randN(2) ) {
 	case 0:
 		return NODE_SIN(NODE_RANDOM(*rec));
 	}
@@ -114,7 +125,7 @@ static Node *_getTrig(MemPool *pool, int *rec) {
 static Node *_getExp(MemPool *pool, int *rec) {
 	*rec += 1;
 
-	switch( rand() % 3 ) {
+	switch( _randN(3) ) {
 	case 0:
 		return NODE_EXP(NODE_RANDOM(*rec));
 	case 1:
@@ -125,7 +136,7 @@ static Node *_getExp(MemPool *pool, int *rec) {
 }
 
 static Node *_getCommon(MemPool *pool, int *rec) {
-	switch( rand() % 4 ) {
+	switch( _randN(4) ) {
 	case 0:
 		*rec -= 1;
 		return NODE_ABS(NODE_RANDOM(*rec));
@@ -145,7 +156,7 @@ static Node *_getCond(MemPool *pool, int *rec) {
 	*rec += 4;
 
 	NodeType cond = NT_LT;
-	switch( rand() % 6 ) {
+	switch( _randN(6) ) {
 	case 0:
 		cond = NT_LT;
 		break;
@@ -176,7 +187,7 @@ static Node *_getCond(MemPool *pool, int *rec) {
 static Node *_getShader(MemPool *pool, int *rec) {
 	*rec += 3;
 
-	switch( rand() % 2 ) {
+	switch( _randN(2) ) {
 	case 0:
 		return NODE_RGB(
 			NODE_RANDOM(*rec), NODE_RANDOM(*rec), NODE_RANDOM(*rec));
@@ -190,36 +201,39 @@ Node *nodeCreateRandom(MemPool *pool, int rec) {
 		return _getValue(pool);
 	}
 
-	unsigned r = rand() % 100;
-	if( r < VALUE_CHANCE ) {
+	double myRand = rand() / (1.0 + RAND_MAX);
+	int range = 101;
+	int r = myRand * range;
+
+	if( r < _valueChance ) {
 		return _getValue(pool);
 	}
-	r -= VALUE_CHANCE;
+	r -= _valueChance;
 
-	if( r < ARITH_CHANCE ) {
+	if( r < _arithChance ) {
 		return _getArith(pool, &rec);
 	}
-	r -= ARITH_CHANCE;
+	r -= _arithChance;
 
-	if( r < TRIG_CHANCE ) {
+	if( r < _trigChance ) {
 		return _getTrig(pool, &rec);
 	}
-	r -= TRIG_CHANCE;
+	r -= _trigChance;
 
-	if( r < EXP_CHANCE ) {
+	if( r < _expChance ) {
 		return _getExp(pool, &rec);
 	}
-	r -= EXP_CHANCE;
+	r -= _expChance;
 
-	if( r < COMMON_CHANCE ) {
+	if( r < _commonChance ) {
 		return _getCommon(pool, &rec);
 	}
-	r -= COMMON_CHANCE;
+	r -= _commonChance;
 
-	if( r < COND_CHANCE ) {
+	if( r < _condChance ) {
 		return _getCond(pool, &rec);
 	}
-	r -= COND_CHANCE;
+	r -= _condChance;
 
 	return _getShader(pool, &rec);
 }

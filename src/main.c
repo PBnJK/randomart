@@ -2,6 +2,7 @@
  * Entry point
  */
 
+#include "lang.h"
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdint.h>
@@ -18,8 +19,42 @@
 
 #define IMAGE_SIZE 512
 
+static char *_loadFile(const char *FILEPATH) {
+	FILE *file = fopen(FILEPATH, "rb");
+	if( file == NULL ) {
+		return NULL;
+	}
+
+	/* Get file size */
+	fseek(file, 0L, SEEK_END);
+	const long FILE_SIZE = ftell(file);
+	rewind(file);
+
+	/* Prepare buffer */
+	char *buffer = malloc(FILE_SIZE + 1);
+	if( buffer == NULL ) {
+		fprintf(stderr, "malloc(%ld) failed\n", FILE_SIZE + 1);
+		exit(EXIT_FAILURE);
+	}
+
+	/* Read file contents into buffer */
+	const long BYTES_READ = fread(buffer, 1, FILE_SIZE, file);
+	if( BYTES_READ < FILE_SIZE ) {
+		fprintf(stderr, "couldn't read file into buffer\n");
+		exit(EXIT_FAILURE);
+	}
+
+	buffer[FILE_SIZE] = '\0';
+
+	/* Close file; we're done here */
+	fclose(file);
+
+	return buffer;
+}
+
 static void _usage(void) {
 	printf("usage: randomart [OPTIONS]\n");
+	printf("       -c, --chance..... Specifies the node chances\n");
 	printf("       -f, --frames..... Specifies frames in GIF (default: 8)\n");
 	printf("       -g, --gif........ Generate a gif instead of an image\n");
 	printf("       -h, --help....... Display this help text\n");
@@ -28,6 +63,7 @@ static void _usage(void) {
 	printf("       -r, --recdepth... Sets the maximum recursion depth\n");
 	printf("                         Note: this will probably segfault if\n");
 	printf("                         set too high (default: 6)\n");
+	printf("       -R, --run........ Runs the given file\n");
 	printf("       -s, --seed....... Seed to use (default: random)\n");
 	printf("       -S, --size....... Size of the image (default: 512)\n");
 	printf("       -v, --verbose.... Output some more information\n");
@@ -48,7 +84,7 @@ static bool _isOpt(int argc, char *argv[], char argS, char *argL) {
 		return true;
 	}
 
-	if( cmd[1] == '-' && cmd[2] != '\0') {
+	if( cmd[1] == '-' && cmd[2] != '\0' ) {
 		return strcmp(cmd + 2, argL) == 0;
 	}
 
@@ -56,6 +92,7 @@ static bool _isOpt(int argc, char *argv[], char argS, char *argL) {
 }
 
 #define CHECK(S, L) if( _isOpt(argc, argv, (S), (L)) )
+#define CHANCE(C, A) if( **argv == (C) || strcmp(*argv, (A)) == 0 )
 #define EXPECT(B)                                                              \
 	do {                                                                       \
 		if( argc == 1 ) {                                                      \
@@ -78,6 +115,7 @@ static bool _isOpt(int argc, char *argv[], char argS, char *argL) {
 
 int main(int argc, char *argv[]) {
 	char *file = "image";
+	char *script = NULL;
 
 	int size = IMAGE_SIZE;
 	int frames = 8;
@@ -85,13 +123,31 @@ int main(int argc, char *argv[]) {
 	unsigned long seed = time(NULL);
 	unsigned long maxrec = 6;
 
+	unsigned _valueChance = 25, _arithChance = 75, _trigChance = 0,
+			 _expChance = 0, _commonChance = 0, _condChance = 0;
+
 	bool gif = false;
-	bool verbose = false;
 	bool quiet = false;
+	bool run = false;
+	bool verbose = false;
 
 	NEXT();
 	while( argc > 0 ) {
-		CHECK('f', "frames") {
+		CHECK('c', "chance") {
+			EXPECT("chance preset");
+
+			CHANCE('n', "normal") {
+			}
+			else CHANCE('c', "complex") {
+				_valueChance = 10;
+				_arithChance = 20;
+				_trigChance = 25;
+				_expChance = 25;
+				_commonChance = 20;
+				_condChance = 0;
+			}
+		}
+		else CHECK('f', "frames") {
 			EXPECT("frame count");
 			frames = strtoul(*argv, NULL, 10);
 			LIMIT(1, 128, frames, "frame count");
@@ -117,6 +173,12 @@ int main(int argc, char *argv[]) {
 			maxrec = strtoul(*argv, NULL, 10);
 			LIMIT(0, 128, maxrec, "recursion depth");
 		}
+		else CHECK('R', "run") {
+			EXPECT("script path");
+
+			script = *argv;
+			run = true;
+		}
 		else CHECK('s', "seed") {
 			EXPECT("seed");
 			seed = strtoul(*argv, NULL, 10);
@@ -138,19 +200,31 @@ int main(int argc, char *argv[]) {
 		NEXT();
 	}
 
-	if( verbose ) {
-		printf("parameters:\n");
-		printf("- seed.............. %lu\n", seed);
-		printf("- recursion depth... %lu\n", maxrec);
-		printf("- outputting to..... %s\n", file);
-		printf("- image size........ %dx%d px\n\n", size, size);
-	}
-
-	srand(seed);
-	nodeSetup(maxrec);
-
+	Node *ast;
 	MemPool pool = poolNew();
-	Node *ast = astCreate(&pool);
+
+	if( run ) {
+		const char *SCRIPT = _loadFile(script);
+		if( !SCRIPT ) {
+			fprintf(stderr, "error loading script at '%s'\n", script);
+		}
+
+		ast = langCompile(SCRIPT);
+	} else {
+		if( verbose ) {
+			printf("parameters:\n");
+			printf("- seed.............. %lu\n", seed);
+			printf("- recursion depth... %lu\n", maxrec);
+			printf("- outputting to..... %s\n", file);
+			printf("- image size........ %dx%d px\n\n", size, size);
+		}
+
+		srand(seed);
+		nodeSetup(maxrec, _valueChance, _arithChance, _trigChance, _expChance,
+			_commonChance, _condChance);
+
+		ast = astCreate(&pool);
+	}
 
 	if( gif ) {
 		printf("1. generating GIF...\n");
