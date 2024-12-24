@@ -147,6 +147,9 @@ static Node *_identifier(Compiler *cc, MemPool *pool) {
 		if( _check(cc, 1, 2, "gb") ) {
 			N3(NODE_RGB);
 		}
+		if( _check(cc, 1, 2, "nd") ) {
+			return NODE_RAND();
+		}
 		break;
 	case 's':
 		if( _check(cc, 1, 2, "in") ) {

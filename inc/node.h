@@ -6,6 +6,7 @@
 typedef enum _NodeType {
 	/* Values */
 	NT_NUM, /* Number */
+	NT_RAND, /* Random number */
 	NT_X, /* X coordinate */
 	NT_Y, /* Y coordinate */
 	NT_T, /* T member */
@@ -59,6 +60,7 @@ typedef struct _Node {
 #define NODE_X() NODE(NT_X)
 #define NODE_Y() NODE(NT_Y)
 #define NODE_T() NODE(NT_T)
+#define NODE_RAND() NODE(NT_RAND)
 
 #define NODE_ADD(A, B) nodeCreateAB(NT_ADD, (A), (B), pool)
 #define NODE_SUB(A, B) nodeCreateAB(NT_SUB, (A), (B), pool)

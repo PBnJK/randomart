@@ -1,5 +1,5 @@
 /* RandomArt
- * Entry point
+ * Entry point for the terminal application
  */
 
 #include "lang.h"

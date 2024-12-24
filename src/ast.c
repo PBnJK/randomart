@@ -17,6 +17,14 @@ static double _mix(double x, double y, double a) {
 	return x * (1.0 - a) + y * a;
 }
 
+/* Gets a random number between [-1, 1] */
+static double _rand(void) {
+	const double NUM = (double)rand();
+	const double MAX = (double)RAND_MAX;
+
+	return (NUM / MAX) * 2.0 - 1.0;
+}
+
 #define RUN(S) (_runAST((S), x, y, t, pool))
 #define RUNN(S) (_runAST((S), x, y, t, pool)->num)
 
@@ -33,6 +41,9 @@ static Node *_runAST(Node *ast, double x, double y, double t, MemPool *pool) {
 		return NODE_NUM(y);
 	case NT_T:
 		return NODE_NUM(t);
+	case NT_RAND: {
+		return NODE_NUM(_rand());
+	}
 	case NT_ADD:
 		return ARITH(+);
 	case NT_SUB:
@@ -186,6 +197,9 @@ static void _astPrint(Node *ast) {
 	case NT_T:
 		printf("t");
 		break;
+	case NT_RAND:
+		printf("rnd");
+		break;
 	case NT_SIN:
 	case NT_COS:
 	case NT_EXP:
@@ -245,6 +259,7 @@ static void _optimize(MemPool *pool, Node *parent, Node *ast) {
 	case NT_X:
 	case NT_Y:
 	case NT_T:
+	case NT_RAND:
 		break;
 	case NT_MIX:
 		_optimize(pool, ast, ast->c);
@@ -313,6 +328,7 @@ bool astInjectT(Node *ast) {
 	case NT_NUM:
 	case NT_X:
 	case NT_Y:
+	case NT_RAND:
 		ast->type = NT_T;
 	case NT_T:
 		return true;

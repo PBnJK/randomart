@@ -91,6 +91,11 @@ static Node *_getValue(MemPool *pool) {
 		return NODE_X();
 	}
 
+	/* Make random less likely because it kinda sucks */
+	if( _randN(16) == 0 ) {
+		return NODE_RAND();
+	}
+
 	return NODE_Y();
 }
 
