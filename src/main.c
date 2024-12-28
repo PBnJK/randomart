@@ -58,6 +58,7 @@ static void _usage(void) {
 	printf("       -f, --frames..... Specifies frames in GIF (default: 8)\n");
 	printf("       -g, --gif........ Generate a gif instead of an image\n");
 	printf("       -h, --help....... Display this help text\n");
+	printf("       -i, --input...... Takes a script as input\n");
 	printf("       -o, --output..... Output filename (default: 'image')\n");
 	printf("       -q, --quiet...... Don't print the generator function\n");
 	printf("       -r, --recdepth... Sets the maximum recursion depth\n");
@@ -161,6 +162,11 @@ int main(int argc, char *argv[]) {
 			_usage();
 			exit(EXIT_SUCCESS);
 		}
+		else CHECK('i', "input") {
+			EXPECT("script");
+			script = *argv;
+			run = true;
+		}
 		else CHECK('o', "output") {
 			EXPECT("filename");
 			file = *argv;
@@ -204,7 +210,7 @@ int main(int argc, char *argv[]) {
 	MemPool pool = poolNew();
 
 	if( run ) {
-		const char *SCRIPT = _loadFile(script);
+		const char *SCRIPT = script ? script : _loadFile(script);
 		if( !SCRIPT ) {
 			fprintf(stderr, "error loading script at '%s'\n", script);
 		}
