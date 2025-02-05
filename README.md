@@ -14,7 +14,7 @@ ninja -C build
 
 The `randomart` executable will be placed under the `build` directory. Note that,
 while `ninja` is the default meson build tool, it might be something else on
-your machine. Please refer to meson's manual for guidance.
+your machine, or may be missing Please refer to meson's manual for guidance.
 
 ## Explanation
 You should read the paper (and Tsoding's [skeet](https://bsky.app/profile/tsoding.bsky.social/post/3la5htxu4542x))
