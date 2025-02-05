@@ -114,7 +114,7 @@ static bool _isOpt(int argc, char *argv[], char argS, char *argL) {
 		}                                                                      \
 	} while( false )
 
-int __cdecl main(int argc, char *argv[]) {
+int main(int argc, char *argv[]) {
 	char *file = "image";
 	char *script = NULL;
 
