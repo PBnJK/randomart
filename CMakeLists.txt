@@ -26,6 +26,8 @@ target_include_directories(
 	${PROJECT_SOURCE_DIR}/inc
 )
 
-find_library(LIBM m)
-target_link_libraries(randomart PRIVATE ${LIBM})
+if(CMAKE_SYSTEM MATCHES Linux)
+	find_library(LIBM m)
+	target_link_libraries(randomart PRIVATE ${LIBM})
+endif()
 

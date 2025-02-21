@@ -2,6 +2,7 @@
  * Entry point for the terminal application
  */
 
+#include <inttypes.h>
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdio.h>
@@ -127,7 +128,7 @@ int main(int argc, char *argv[]) {
 	int size = IMAGE_SIZE;
 	int frames = 8;
 
-	unsigned long seed = 0;
+	uint64_t seed = 0;
 	unsigned long maxrec = 6;
 
 	unsigned _valueChance = 25, _arithChance = 75, _trigChance = 0,
@@ -209,8 +210,8 @@ int main(int argc, char *argv[]) {
 		else CHECK('s', "seed") {
 			EXPECT("seed");
 
-			const unsigned long FNV_OFFSET_BASIS = 0x00000100000001b3;
-			const unsigned long FNV_PRIME = 0xcbf29ce484222325;
+			const uint64_t FNV_OFFSET_BASIS = 0x00000100000001b3U;
+			const uint64_t FNV_PRIME = 0xcbf29ce484222325U;
 
 			const char *SEED = *argv;
 			seed = FNV_OFFSET_BASIS;
@@ -257,7 +258,7 @@ int main(int argc, char *argv[]) {
 	} else {
 		if( verbose ) {
 			printf("parameters:\n");
-			printf("- seed.............. %lu\n", seed);
+			printf("- seed.............. %" PRIu64 "\n", seed);
 			printf("- recursion depth... %lu\n", maxrec);
 			printf("- outputting to..... %s\n", file);
 			printf("- image size........ %dx%d px\n\n", size, size);
