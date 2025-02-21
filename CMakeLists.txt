@@ -1,18 +1,31 @@
-cmake_minimum_required(VERSION 3.28.0)
+cmake_minimum_required(VERSION 3.28)
 
-set(CMAKE_CONFIGURATION_TYPES Debug;Release;RelWithDebInfo)
+project(
+	RandomArt
+	VERSION 0.2.0
+	LANGUAGES C
+)
 
-project(randomart)
+add_executable(
+	randomart
 
-include_directories(inc)
-file(GLOB SOURCES src/*.c)
+	"src/main.c"
 
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/build_wasm")
-add_executable(randomart ${SOURCES})
+	"src/ast.c"
+	"src/lang.c"
+	"src/mempool.c"
+	"src/node.c"
+)
 
-message(STATUS "Setting compilation target to WASM")
-set(CMAKE_EXECUTABLE_SUFFIX ".wasm.js")
+target_compile_features(randomart PRIVATE c_std_99)
+target_compile_options(randomart PRIVATE -Wall -Wextra -pedantic)
 
-target_compile_options(randomart PRIVATE -g)
-target_link_options(randomart PRIVATE "-sWASM=1")
-target_link_options(randomart PRIVATE "-sEXPORTED_FUNCTIONS=[\"_main\"]")
+target_include_directories(
+	randomart
+	PRIVATE
+	${PROJECT_SOURCE_DIR}/inc
+)
+
+find_library(LIBM m)
+target_link_libraries(randomart PRIVATE ${LIBM})
+

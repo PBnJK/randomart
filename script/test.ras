@@ -1,1 +1,1 @@
-(rgb (add x y) x y)
+(rgb (<= x y) x y)

@@ -5,16 +5,13 @@ Simple C implementation of the RandomArt generation algorithm described on this
 [implementation](https://github.com/tsoding/randomart), so thanks for the idea!!!
 
 ## Building
-Install [meson](https://mesonbuild.com/Getting-meson.html), then run:
+Install [CMake](https://cmake.org/download/), then run:
 ```bash
-mkdir build
-meson setup build
-ninja -C build
+cd build
+cmake ..
+make
 ```
-
-The `randomart` executable will be placed under the `build` directory. Note that,
-while `ninja` is the default meson build tool, it might be something else on
-your machine, or may be missing Please refer to meson's manual for guidance.
+The `randomart` executable will be placed under the `build` directory.
 
 ## Explanation
 You should read the paper (and Tsoding's [skeet](https://bsky.app/profile/tsoding.bsky.social/post/3la5htxu4542x))

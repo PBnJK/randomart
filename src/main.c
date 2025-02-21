@@ -2,8 +2,8 @@
  * Entry point for the terminal application
  */
 
-#include "lang.h"
 #include <stdbool.h>
+#include <stddef.h>
 #include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
@@ -14,6 +14,7 @@
 #include "stb_image_write.h"
 
 #include "ast.h"
+#include "lang.h"
 #include "mempool.h"
 #include "node.h"
 
@@ -55,16 +56,21 @@ static char *_loadFile(const char *FILEPATH) {
 static void _usage(void) {
 	printf("usage: randomart [OPTIONS]\n");
 	printf("       -c, --chance..... Specifies the node chances\n");
+	printf("                         possible values:\n");
+	printf("                         b/branch.... your CPU will hate you\n");
+	printf("                         c/complex... more complex maths\n");
+	printf("                         C/chaos..... totally chaotic images\n");
+	printf("                         n/normal.... normal chances (default)\n");
 	printf("       -f, --frames..... Specifies frames in GIF (default: 8)\n");
 	printf("       -g, --gif........ Generate a gif instead of an image\n");
 	printf("       -h, --help....... Display this help text\n");
-	printf("       -i, --input...... Takes a script as input\n");
+	printf("       -i, --input...... Takes a script file as input\n");
 	printf("       -o, --output..... Output filename (default: 'image')\n");
 	printf("       -q, --quiet...... Don't print the generator function\n");
 	printf("       -r, --recdepth... Sets the maximum recursion depth\n");
 	printf("                         Note: this will probably segfault if\n");
 	printf("                         set too high (default: 6)\n");
-	printf("       -R, --run........ Runs the given file\n");
+	printf("       -R, --run........ Runs a script passed as an argument\n");
 	printf("       -s, --seed....... Seed to use (default: random)\n");
 	printf("       -S, --size....... Size of the image (default: 512)\n");
 	printf("       -v, --verbose.... Output some more information\n");
@@ -74,7 +80,7 @@ static void _usage(void) {
 	--argc;                                                                    \
 	++argv
 
-static bool _isOpt(int argc, char *argv[], char argS, char *argL) {
+static bool _isOpt(char *argv[], char argS, char *argL) {
 	char *cmd = *argv;
 	if( *cmd != '-' ) {
 		fprintf(stderr, "unexpected %s\n", cmd);
@@ -92,7 +98,7 @@ static bool _isOpt(int argc, char *argv[], char argS, char *argL) {
 	return false;
 }
 
-#define CHECK(S, L) if( _isOpt(argc, argv, (S), (L)) )
+#define CHECK(S, L) if( _isOpt(argv, (S), (L)) )
 #define CHANCE(C, A) if( **argv == (C) || strcmp(*argv, (A)) == 0 )
 #define EXPECT(B)                                                              \
 	do {                                                                       \
@@ -121,7 +127,7 @@ int main(int argc, char *argv[]) {
 	int size = IMAGE_SIZE;
 	int frames = 8;
 
-	unsigned long seed = time(NULL);
+	unsigned long seed = 0;
 	unsigned long maxrec = 6;
 
 	unsigned _valueChance = 25, _arithChance = 75, _trigChance = 0,
@@ -137,15 +143,31 @@ int main(int argc, char *argv[]) {
 		CHECK('c', "chance") {
 			EXPECT("chance preset");
 
-			CHANCE('n', "normal") {
+			CHANCE('b', "branch") {
+				_valueChance = 10;
+				_arithChance = 25;
+				_trigChance = 5;
+				_expChance = 5;
+				_commonChance = 5;
+				_condChance = 40;
 			}
 			else CHANCE('c', "complex") {
 				_valueChance = 10;
 				_arithChance = 20;
-				_trigChance = 25;
-				_expChance = 25;
+				_trigChance = 20;
+				_expChance = 20;
 				_commonChance = 20;
 				_condChance = 0;
+			}
+			else CHANCE('C', "chaos") {
+				_valueChance = 20;
+				_arithChance = 5;
+				_trigChance = 30;
+				_expChance = 30;
+				_commonChance = 5;
+				_condChance = 10;
+			}
+			else CHANCE('n', "normal") {
 			}
 		}
 		else CHECK('f', "frames") {
@@ -165,7 +187,6 @@ int main(int argc, char *argv[]) {
 		else CHECK('i', "input") {
 			EXPECT("script");
 			script = *argv;
-			run = true;
 		}
 		else CHECK('o', "output") {
 			EXPECT("filename");
@@ -187,7 +208,16 @@ int main(int argc, char *argv[]) {
 		}
 		else CHECK('s', "seed") {
 			EXPECT("seed");
-			seed = strtoul(*argv, NULL, 10);
+
+			const unsigned long FNV_OFFSET_BASIS = 0x00000100000001b3;
+			const unsigned long FNV_PRIME = 0xcbf29ce484222325;
+
+			const char *SEED = *argv;
+			seed = FNV_OFFSET_BASIS;
+			for( size_t i = 0; i < strlen(SEED); ++i ) {
+				seed = seed ^ SEED[i];
+				seed = seed * FNV_PRIME;
+			}
 		}
 		else CHECK('S', "size") {
 			EXPECT("size");
@@ -206,16 +236,24 @@ int main(int argc, char *argv[]) {
 		NEXT();
 	}
 
+	if( seed == 0 ) {
+		seed = time(NULL);
+	}
+
+	srand(seed);
+
 	Node *ast;
 	MemPool pool = poolNew();
 
-	if( run ) {
-		const char *SCRIPT = script ? script : _loadFile(script);
-		if( !SCRIPT ) {
-			fprintf(stderr, "error loading script at '%s'\n", script);
+	if( script ) {
+		if( !run ) {
+			script = _loadFile(script);
+			if( !script ) {
+				fprintf(stderr, "error loading script at '%s'\n", script);
+			}
 		}
 
-		ast = langCompile(SCRIPT);
+		ast = langCompile(script);
 	} else {
 		if( verbose ) {
 			printf("parameters:\n");
@@ -225,11 +263,17 @@ int main(int argc, char *argv[]) {
 			printf("- image size........ %dx%d px\n\n", size, size);
 		}
 
-		srand(seed);
 		nodeSetup(maxrec, _valueChance, _arithChance, _trigChance, _expChance,
 			_commonChance, _condChance);
 
 		ast = astCreate(&pool);
+	}
+
+	if( ast == NULL ) {
+		fprintf(stderr, "error creating AST\n");
+
+		poolFree(&pool);
+		return EXIT_FAILURE;
 	}
 
 	if( gif ) {

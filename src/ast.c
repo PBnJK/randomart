@@ -28,7 +28,7 @@ static double _rand(void) {
 #define RUN(S) (_runAST((S), x, y, t, pool))
 #define RUNN(S) (_runAST((S), x, y, t, pool)->num)
 
-#define COND(S) ((RUN(ast->a) S RUN(ast->b)) ? NODE_NUM(1) : NODE_NUM(-1))
+#define COND(S) ((RUN(ast->a) S RUN(ast->b)) ? NODE_NUM(1) : NODE_NUM(0))
 #define ARITH(O) (NODE_NUM(RUN(ast->a)->num O RUN(ast->b)->num))
 
 static Node *_runAST(Node *ast, double x, double y, double t, MemPool *pool) {
@@ -263,6 +263,7 @@ static void _optimize(MemPool *pool, Node *parent, Node *ast) {
 		break;
 	case NT_MIX:
 		_optimize(pool, ast, ast->c);
+		/* fallthrough */
 	case NT_MIN:
 	case NT_MAX:
 		_optimize(pool, ast, ast->b);
@@ -277,6 +278,7 @@ static void _optimize(MemPool *pool, Node *parent, Node *ast) {
 	case NT_DIV:
 	case NT_MOD:
 		_optimize(pool, ast, ast->b);
+		/* fallthrough */
 	case NT_SIN:
 	case NT_COS:
 	case NT_EXP:
@@ -330,6 +332,7 @@ bool astInjectT(Node *ast) {
 	case NT_Y:
 	case NT_RAND:
 		ast->type = NT_T;
+		/* fallthrough */
 	case NT_T:
 		return true;
 	case NT_IF:
@@ -338,6 +341,7 @@ bool astInjectT(Node *ast) {
 		if( astInjectT(ast->c) ) {
 			return true;
 		}
+		/* fallthrough */
 	case NT_MIN:
 	case NT_MAX:
 	case NT_ADD:
@@ -354,6 +358,7 @@ bool astInjectT(Node *ast) {
 		if( astInjectT(ast->b) ) {
 			return true;
 		}
+		/* fallthrough */
 	case NT_SIN:
 	case NT_COS:
 	case NT_EXP:

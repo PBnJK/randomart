@@ -2,5 +2,4 @@
 image.png
 
 build/
-build_wasm/
-build_win/
+!build/.gitkeep

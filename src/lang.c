@@ -14,6 +14,8 @@
 
 typedef struct _Compiler {
 	const char *start, *current;
+	int line;
+	int character;
 } Compiler;
 
 static bool _reachedEOF(Compiler *cc) {
@@ -24,15 +26,8 @@ static char _peek(Compiler *cc) {
 	return *cc->current;
 }
 
-static char _peekNext(Compiler *cc) {
-	if( _reachedEOF(cc) ) {
-		return '\0';
-	}
-
-	return cc->current[1];
-}
-
 static char _advance(Compiler *cc) {
+	++cc->character;
 	return *(cc->current++);
 }
 
@@ -55,7 +50,12 @@ static void _skipSpace(Compiler *cc) {
 		case ' ':
 		case '\t':
 		case '\r':
+			++cc->character;
+			_advance(cc);
+			break;
 		case '\n':
+			++cc->line;
+			cc->character = 1;
 			_advance(cc);
 			break;
 		default:
@@ -117,10 +117,12 @@ static Node *_identifier(Compiler *cc, MemPool *pool) {
 		if( _check(cc, 1, 4, "ract") ) {
 			N1(NODE_FRACT);
 		}
+		break;
 	case 'i':
 		if( cc->current[-1] == 'f' ) {
 			N3(NODE_IF);
 		}
+		break;
 	case 'l':
 		if( _check(cc, 1, 2, "og") ) {
 			N1(NODE_LOG);
@@ -170,8 +172,17 @@ static Node *_identifier(Compiler *cc, MemPool *pool) {
 		return NODE_T();
 	}
 
-	printf("err: no such identifier '%c' dude\n", *cc->start);
+	printf("err:%d:%d unknown identifier near '%c'\n", cc->line, cc->character,
+		*cc->start);
 	exit(EXIT_FAILURE);
+}
+
+static Node *_parseNumber(Compiler *cc, MemPool *pool) {
+	char *end;
+	double num = strtod(cc->start, &end);
+	cc->start = cc->current = end;
+
+	return NODE_NUM(num);
 }
 
 static Node *_expr(Compiler *cc, MemPool *pool) {
@@ -179,17 +190,13 @@ static Node *_expr(Compiler *cc, MemPool *pool) {
 
 	cc->start = cc->current;
 	if( _reachedEOF(cc) ) {
-		printf("bad formula\n");
+		printf("err:%d:%d unexpected EOF\n", cc->line, cc->character);
 		exit(EXIT_FAILURE);
 	}
 
 	const char CHAR = _advance(cc);
 	if( _isDigit(CHAR) ) {
-		char *end;
-		double num = strtod(cc->start, &end);
-		cc->start = cc->current = end;
-
-		return NODE_NUM(num);
+		return _parseNumber(cc, pool);
 	}
 
 	if( _isAlpha(CHAR) ) {
@@ -201,30 +208,60 @@ static Node *_expr(Compiler *cc, MemPool *pool) {
 	case ')':
 		return _expr(cc, pool);
 	case '<': {
-		if( _peekNext(cc) == '=' ) {
+		if( _peek(cc) == '=' ) {
+			_advance(cc);
 			N2(NODE_LTEQ);
 		}
 		N2(NODE_LT);
 	}
 	case '>': {
-		if( _peekNext(cc) == '=' ) {
+		if( _peek(cc) == '=' ) {
+			_advance(cc);
 			N2(NODE_GTEQ);
 		}
 		N2(NODE_GT);
 	}
 	case '!': {
-		if( _peekNext(cc) == '=' ) {
+		if( _peek(cc) == '=' ) {
+			_advance(cc);
 			N2(NODE_NEQ);
 		}
 	} break;
 	case '=': {
-		if( _peekNext(cc) == '=' ) {
+		if( _peek(cc) == '=' ) {
+			_advance(cc);
 			N2(NODE_EQ);
 		}
+	} break;
+	case '+': {
+		if( _isDigit(_peek(cc)) ) {
+			return _parseNumber(cc, pool);
+		}
+
+		printf("function\n");
+		N2(NODE_ADD);
+	}
+	case '-': {
+		if( _isDigit(_peek(cc)) ) {
+			return _parseNumber(cc, pool);
+		}
+
+		printf("function\n");
+		N2(NODE_SUB);
+	}
+	case '*': {
+		N2(NODE_MUL);
+	}
+	case '/': {
+		N2(NODE_DIV);
+	}
+	case '%': {
+		N2(NODE_MOD);
 	}
 	}
 
-	printf("err: no such thing '%c' dude\n", CHAR);
+	printf("err:%d:%d: unexpected character '%c' met\n", cc->line,
+		cc->character, CHAR);
 	exit(EXIT_FAILURE);
 }
 
@@ -234,6 +271,8 @@ Node *langCompile(const char *EXPR) {
 	Compiler cc;
 	cc.start = EXPR;
 	cc.current = EXPR;
+	cc.line = 1;
+	cc.character = 1;
 
 	Node *ast = _expr(&cc, &pool);
 

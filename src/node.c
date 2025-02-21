@@ -10,7 +10,7 @@
 
 #include "node.h"
 
-static unsigned _maxrec = 0;
+static int _maxrec = 0;
 
 /* Generates a random number in the range [-1, 1] */
 static double _randNumber(void) {
@@ -34,8 +34,8 @@ void nodeSetup(unsigned maxrec, unsigned val, unsigned arith, unsigned trig,
 
 	if( _valueChance + _arithChance + _trigChance + _expChance + _commonChance
 			+ _condChance
-		!= 100 ) {
-		printf("chances must add up to 100%%\n");
+		> 100 ) {
+		printf("chances must add up to be at least less than 100%%\n");
 		exit(EXIT_FAILURE);
 	}
 }
@@ -207,8 +207,8 @@ Node *nodeCreateRandom(MemPool *pool, int rec) {
 	}
 
 	double myRand = rand() / (1.0 + RAND_MAX);
-	int range = 101;
-	int r = myRand * range;
+	unsigned int range = 101;
+	unsigned int r = myRand * range;
 
 	if( r < _valueChance ) {
 		return _getValue(pool);
