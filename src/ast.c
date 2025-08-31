@@ -17,19 +17,17 @@ static double _mix(double x, double y, double a) {
 	return x * (1.0 - a) + y * a;
 }
 
-/* Gets a random number between [-1, 1] */
+/* Generates a random number in the range [0, 1] */
 static double _rand(void) {
-	const double NUM = (double)rand();
-	const double MAX = (double)RAND_MAX;
-
-	return (NUM / MAX) * 2.0 - 1.0;
+	double num = (double)rand();
+	return (num / RAND_MAX);
 }
 
 #define RUN(S) (_runAST((S), x, y, t, pool))
 #define RUNN(S) (_runAST((S), x, y, t, pool)->num)
 
-#define COND(S) ((RUN(ast->a) S RUN(ast->b)) ? NODE_NUM(1) : NODE_NUM(0))
-#define ARITH(O) (NODE_NUM(RUN(ast->a)->num O RUN(ast->b)->num))
+#define COND(S) ((RUNN(ast->a) S RUNN(ast->b)) ? NODE_NUM(1) : NODE_NUM(-1))
+#define ARITH(O) (NODE_NUM(RUNN(ast->a) O RUNN(ast->b)))
 
 static Node *_runAST(Node *ast, double x, double y, double t, MemPool *pool) {
 	switch( ast->type ) {
@@ -98,8 +96,8 @@ static Node *_runAST(Node *ast, double x, double y, double t, MemPool *pool) {
 }
 
 /* XY as intensity ([0, DIMENSION] -> [-1, 1]) */
-#define X_INT (2 * ((double)(x) / w) - 1)
-#define Y_INT (2 * ((double)(y) / h) - 1)
+#define X_INT (2 * ((double)(x) / (w - 1)) - 1)
+#define Y_INT (2 * ((double)(y) / (h - 1)) - 1)
 
 /* RGB from intensity ([-1, 1] -> [0, 255]) */
 #define INT_C(C) ((int)((((C) + 1) / 2) * 255))

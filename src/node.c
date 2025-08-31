@@ -12,10 +12,10 @@
 
 static int _maxrec = 0;
 
-/* Generates a random number in the range [-1, 1] */
-static double _randNumber(void) {
+/* Generates a random number in the range [0, 1] */
+static double _rand(void) {
 	double num = (double)rand();
-	return 2.0 * (num / RAND_MAX) - 1.0;
+	return (num / RAND_MAX);
 }
 
 static unsigned _valueChance, _arithChance, _trigChance, _expChance,
@@ -86,7 +86,7 @@ static int _randN(int n) {
 static Node *_getValue(MemPool *pool) {
 	switch( _randN(3) ) {
 	case 0:
-		return NODE_NUM(_randNumber());
+		return NODE_NUM(_rand());
 	case 1:
 		return NODE_X();
 	}

@@ -21,6 +21,10 @@
 
 #define IMAGE_SIZE 512
 
+static int _randRange(int minValue, int maxValue) {
+	return rand() % (maxValue + 1 - minValue) + minValue;
+}
+
 static char *_loadFile(const char *FILEPATH) {
 	FILE *file = fopen(FILEPATH, "rb");
 	if( file == NULL ) {
@@ -61,6 +65,10 @@ static void _usage(void) {
 	printf("                         b/branch.... your CPU will hate you\n");
 	printf("                         c/complex... more complex maths\n");
 	printf("                         C/chaos..... totally chaotic images\n");
+	printf("                         f/fair...... equal chances\n");
+	printf("                         r/random.... random chances\n");
+	printf("                         s/simple.... simple maths\n");
+	printf("                         t/trig...... for trigonometry lovers\n");
 	printf("                         n/normal.... normal chances (default)\n");
 	printf("       -f, --frames..... Specifies frames in GIF (default: 8)\n");
 	printf("       -g, --gif........ Generate a gif instead of an image\n");
@@ -138,6 +146,7 @@ int main(int argc, char *argv[]) {
 	bool quiet = false;
 	bool run = false;
 	bool verbose = false;
+	bool random_chances = false;
 
 	NEXT();
 	while( argc > 0 ) {
@@ -168,7 +177,39 @@ int main(int argc, char *argv[]) {
 				_commonChance = 5;
 				_condChance = 10;
 			}
+			else CHANCE('f', "fair") {
+				_valueChance = 20;
+				_arithChance = 16;
+				_trigChance = 16;
+				_expChance = 16;
+				_commonChance = 16;
+				_condChance = 16;
+			}
+			else CHANCE('r', "random") {
+				random_chances = true;
+			}
+			else CHANCE('s', "simple") {
+				_valueChance = 20;
+				_arithChance = 60;
+				_trigChance = 5;
+				_expChance = 5;
+				_commonChance = 5;
+				_condChance = 5;
+			}
+			else CHANCE('t', "trig") {
+				_valueChance = 10;
+				_arithChance = 10;
+				_trigChance = 70;
+				_expChance = 5;
+				_commonChance = 3;
+				_condChance = 1;
+			}
 			else CHANCE('n', "normal") {
+			}
+			else {
+				printf("unknown chance preset '%s'\n\n", *argv);
+				_usage();
+				exit(EXIT_FAILURE);
 			}
 		}
 		else CHECK('f', "frames") {
@@ -243,6 +284,32 @@ int main(int argc, char *argv[]) {
 
 	srand(seed);
 
+	if( random_chances ) {
+		int qt = 99, r = 0;
+
+		r = qt - _randRange(0, qt);
+		_valueChance = 1 + r;
+		qt -= r;
+
+		r = qt - _randRange(0, qt);
+		_arithChance = r;
+		qt -= r;
+
+		r = qt - _randRange(0, qt);
+		_trigChance = r;
+		qt -= r;
+
+		r = qt - _randRange(0, qt);
+		_expChance = r;
+		qt -= r;
+
+		r = qt - _randRange(0, qt);
+		_commonChance = r;
+		qt -= r;
+
+		_condChance = qt;
+	}
+
 	Node *ast;
 	MemPool pool = poolNew();
 
@@ -257,7 +324,14 @@ int main(int argc, char *argv[]) {
 		ast = langCompile(script);
 	} else {
 		if( verbose ) {
-			printf("parameters:\n");
+			printf("chances:\n");
+			printf("- value..........%d%%\n", _valueChance);
+			printf("- arithmetic.....%d%%\n", _arithChance);
+			printf("- trigonometry...%d%%\n", _trigChance);
+			printf("- exponent.......%d%%\n", _expChance);
+			printf("- shader.........%d%%\n", _commonChance);
+			printf("- conditional....%d%%\n", _condChance);
+			printf("\nparameters:\n");
 			printf("- seed.............. %" PRIu64 "\n", seed);
 			printf("- recursion depth... %lu\n", maxrec);
 			printf("- outputting to..... %s\n", file);
