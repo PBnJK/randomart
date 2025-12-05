@@ -15,7 +15,4 @@ void astPrint(Node *ast);
 /* Randomly creates an AST */
 Node *astCreate(MemPool *pool);
 
-/* Injects a T member into an AST */
-bool astInjectT(Node *ast);
-
 #endif // !GUARD_RANDOMART_AST_H_

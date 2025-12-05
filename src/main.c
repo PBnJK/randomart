@@ -77,11 +77,9 @@ static void _usage(void) {
 	printf("       -o, --output..... Output filename (default: 'image')\n");
 	printf("       -q, --quiet...... Don't print the generator function\n");
 	printf("       -r, --recdepth... Sets the maximum recursion depth\n");
-	printf("                         Note: this will probably segfault if\n");
-	printf("                         set too high (default: 6)\n");
 	printf("       -R, --run........ Runs a script passed as an argument\n");
 	printf("       -s, --seed....... Seed to use (default: random)\n");
-	printf("       -S, --size....... Size of the image (default: 512)\n");
+	printf("       -S, --size....... Size of the image (default: 512 512)\n");
 	printf("       -v, --verbose.... Output some more information\n");
 }
 
@@ -132,8 +130,10 @@ static bool _isOpt(char *argv[], char argS, char *argL) {
 int main(int argc, char *argv[]) {
 	char *file = "image";
 	char *script = NULL;
+	char *script_buf;
 
-	int size = IMAGE_SIZE;
+	int size_w = IMAGE_SIZE;
+	int size_h = IMAGE_SIZE;
 	int frames = 8;
 
 	uint64_t seed = 0;
@@ -202,7 +202,7 @@ int main(int argc, char *argv[]) {
 				_trigChance = 70;
 				_expChance = 5;
 				_commonChance = 3;
-				_condChance = 1;
+				_condChance = 2;
 			}
 			else CHANCE('n', "normal") {
 			}
@@ -262,9 +262,13 @@ int main(int argc, char *argv[]) {
 			}
 		}
 		else CHECK('S', "size") {
-			EXPECT("size");
-			size = strtoul(*argv, NULL, 10);
-			LIMIT(1, 16384, size, "size");
+			EXPECT("width");
+			size_w = strtoul(*argv, NULL, 10);
+			LIMIT(1, 16384, size_w, "width");
+
+			EXPECT("height");
+			size_h = strtoul(*argv, NULL, 10);
+			LIMIT(1, 16384, size_h, "height");
 		}
 		else CHECK('v', "verbose") {
 			verbose = true;
@@ -315,13 +319,14 @@ int main(int argc, char *argv[]) {
 
 	if( script ) {
 		if( !run ) {
-			script = _loadFile(script);
-			if( !script ) {
-				fprintf(stderr, "error loading script at '%s'\n", script);
+			script_buf = _loadFile(script);
+			if( script_buf ) {
+				fprintf(stderr, "error loading script at '%s'\n", script_buf);
+				return EXIT_FAILURE;
 			}
 		}
 
-		ast = langCompile(script);
+		ast = langCompile(script_buf);
 	} else {
 		if( verbose ) {
 			printf("chances:\n");
@@ -335,7 +340,7 @@ int main(int argc, char *argv[]) {
 			printf("- seed.............. %" PRIu64 "\n", seed);
 			printf("- recursion depth... %lu\n", maxrec);
 			printf("- outputting to..... %s\n", file);
-			printf("- image size........ %dx%d px\n\n", size, size);
+			printf("- image size........ %dx%d px\n\n", size_w, size_h);
 		}
 
 		nodeSetup(maxrec, _valueChance, _arithChance, _trigChance, _expChance,
@@ -354,7 +359,6 @@ int main(int argc, char *argv[]) {
 	if( gif ) {
 		printf("1. generating GIF...\n");
 
-		astInjectT(ast);
 		if( !quiet ) {
 			printf("f(x, y) = ");
 			astPrint(ast);
@@ -367,16 +371,21 @@ int main(int argc, char *argv[]) {
 
 			printf("2. running AST [%03d/%03d]...", i + 1, frames);
 			fflush(stdout);
-			byte *image = astDoFrame(ast, size, size, t);
+			byte *image = astDoFrame(ast, size_w, size_h, t);
 
 			snprintf(filepath, 256, "%s-%02d.png", file, i);
-			stbi_write_png(filepath, size, size, 3, image, size * 3);
+			stbi_write_png(filepath, size_w, size_h, 3, image, size_w * 3);
 
 			free(image);
 			printf("\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b");
 		}
 
 		printf("\n");
+
+		printf("3. invoking ffmpeg...\n");
+		system("ffmpeg -y -i image-%02d.png -filter_complex "
+			   "\"[0]reverse[r];[0][r]concat,loop=1:120,setpts=N/12/TB\" "
+			   "-framerate 12 out.gif");
 	} else {
 		printf("1. generating image...\n");
 		if( !quiet ) {
@@ -385,13 +394,13 @@ int main(int argc, char *argv[]) {
 		}
 
 		printf("\n2. running AST...\n");
-		byte *image = astDoFrame(ast, size, size, 1);
+		byte *image = astDoFrame(ast, size_w, size_h, 1);
 
 		printf("\n3. writing image...\n");
 		char filepath[256];
 		snprintf(filepath, 256, "%s.png", file);
 
-		stbi_write_png(filepath, size, size, 3, image, size * 3);
+		stbi_write_png(filepath, size_w, size_h, 3, image, size_h * 3);
 		free(image);
 	}
 

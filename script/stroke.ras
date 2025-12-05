@@ -1,0 +1,1 @@
+(rgb (sub (sub x (div (mul y 0.179603) (add y 0.0190984))) (div (sub (add x 0.405067) 0.0136063) (sub x (rgb y x 0.264116)))) (mod (sub (div (add 0.832435 x) (div y y)) (mul 0.711419 0.825349)) (sub (add y (mod 0.203747 x)) (mul (sub x y) (mix 0.894777 0.361406 y)))) (mul 0.343404 (mod (mul (add y 0.089752) (sub x 0.198278)) (div (add y y) (add x 0.119672)))))

@@ -37,8 +37,6 @@ static Node *_runAST(Node *ast, double x, double y, double t, MemPool *pool) {
 		return NODE_NUM(x);
 	case NT_Y:
 		return NODE_NUM(y);
-	case NT_T:
-		return NODE_NUM(t);
 	case NT_RAND: {
 		return NODE_NUM(_rand());
 	}
@@ -112,9 +110,9 @@ byte *astDoFrame(Node *ast, int w, int h, double t) {
 
 		for( int x = 0; x < w; ++x ) {
 			Node *node = _runAST(ast, X_INT, Y_INT, t, &vmPool);
-			image[i++] = INT_C(node->a->num);
-			image[i++] = INT_C(node->b->num);
-			image[i++] = INT_C(node->c->num);
+			image[i++] = INT_C(node->a->num + t);
+			image[i++] = INT_C(node->b->num + t);
+			image[i++] = INT_C(node->c->num + t);
 		}
 
 		poolFree(&vmPool);
@@ -192,9 +190,6 @@ static void _astPrint(Node *ast) {
 	case NT_Y:
 		printf("y");
 		break;
-	case NT_T:
-		printf("t");
-		break;
 	case NT_RAND:
 		printf("rnd");
 		break;
@@ -256,7 +251,6 @@ static void _optimize(MemPool *pool, Node *parent, Node *ast) {
 	case NT_NUM:
 	case NT_X:
 	case NT_Y:
-	case NT_T:
 	case NT_RAND:
 		break;
 	case NT_MIX:
@@ -274,7 +268,6 @@ static void _optimize(MemPool *pool, Node *parent, Node *ast) {
 	case NT_SUB:
 	case NT_MUL:
 	case NT_DIV:
-	case NT_MOD:
 		_optimize(pool, ast, ast->b);
 		/* fallthrough */
 	case NT_SIN:
@@ -292,6 +285,7 @@ static void _optimize(MemPool *pool, Node *parent, Node *ast) {
 	case NT_GTEQ:
 	case NT_EQ:
 	case NT_NEQ:
+	case NT_MOD:
 		_optimize(pool, ast, ast->b);
 		_optimize(pool, ast, ast->a);
 		if( _areEqual(ast->a, ast->b) ) {
@@ -321,51 +315,4 @@ Node *astCreate(MemPool *pool) {
 	_optimize(pool, NULL, ast);
 
 	return ast;
-}
-
-bool astInjectT(Node *ast) {
-	switch( ast->type ) {
-	case NT_NUM:
-	case NT_X:
-	case NT_Y:
-	case NT_RAND:
-		ast->type = NT_T;
-		/* fallthrough */
-	case NT_T:
-		return true;
-	case NT_IF:
-	case NT_RGB:
-	case NT_MIX:
-		if( astInjectT(ast->c) ) {
-			return true;
-		}
-		/* fallthrough */
-	case NT_MIN:
-	case NT_MAX:
-	case NT_ADD:
-	case NT_SUB:
-	case NT_MUL:
-	case NT_DIV:
-	case NT_MOD:
-	case NT_LT:
-	case NT_LTEQ:
-	case NT_GT:
-	case NT_GTEQ:
-	case NT_EQ:
-	case NT_NEQ:
-		if( astInjectT(ast->b) ) {
-			return true;
-		}
-		/* fallthrough */
-	case NT_SIN:
-	case NT_COS:
-	case NT_EXP:
-	case NT_LOG:
-	case NT_SQRT:
-	case NT_ABS:
-	case NT_FRACT:
-		return astInjectT(ast->a);
-	}
-
-	return false;
 }

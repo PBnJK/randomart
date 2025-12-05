@@ -168,8 +168,6 @@ static Node *_identifier(Compiler *cc, MemPool *pool) {
 		return NODE_X();
 	case 'y':
 		return NODE_Y();
-	case 't':
-		return NODE_T();
 	}
 
 	printf("err:%d:%d unknown identifier near '%c'\n", cc->line, cc->character,
