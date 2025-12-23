@@ -62,3 +62,27 @@ upon by just re-running the tool a bunch.
 `f(x, y) = (rgb (exp (if (> (cos (fract y)) 0.638717) (sin (sin x)) (sin (fract 0.865973)))) (cos (cos (exp (cos (sin (fract rnd)))))) (cos (rgb (exp (if (!= x y) y x)) (sqrt (sin (sqrt 0.260944))) (sin (sin (cos 0.508175))))))`
 
 <center><img alt="image of the sort of decal you'd see on the side of something named a 'starfighter,' or 'cosmic freighter.' Two red, fading, parallel horizontal lines against a blue background. To their left is a strange, grooved pattern in green. A layer of subtle noise coats the image, as if subjected to film grain, or resembling scratches from cosmic debris." src="examples/rainbow.png"></center>
+
+## Less
+
+`f(x, y) = (rgb (mod (add (sub y 0.288258) (div (div y rnd) (mod 0.334164 0.238114))) (div (div (mod y 0.700225) (sub x y)) (div (sub 0.212497 x) (sub 0.792568 0.743033)))) (div (div (sub (div y 0.765275) (div 0.870307 0.155784)) x) (mul (mod (add y 0.886776) (sub x 0.614713)) (div (div y rnd) (sub y rnd)))) (sub (sub (sub (mul x y) (sub y 0.206614)) (sub (mul x y) (sub 0.935633 rnd))) (mod (mul (mul y x) (sub y 0.640864)) (mod (mod 0.984834 x) (add y x)))))`
+
+<center><img alt="image resembling the cover art for Pink Floyd's album 'More;' a vague image of something like a satellite dish covered in noise" src="examples/less.png"></center>
+
+## Serpinski
+
+`f(x, y) = (rgb x (add (mul y (add (mod 0.38666 x) (sub 0.309787 y))) 0.655852) (mod (mod (mod (add x y) (mod x 0.165794)) (div (mul x x) (sub x 0.938978))) (div (mod (sub 0.489531 0.0436554) y) (add y 0.948497))))`
+
+<center><img alt="image of a graph having an existential crisis" src="examples/serpinski.png"></center>
+
+## Rave Fireworks
+
+`f(x, y) = (rgb (mod (mul x x) (mod (sub (div 0.202347 x) (add x 0.104789)) (mul (sub x y) (mod 0.577961 0.802299)))) 0.56576 (sub 0.840417 (div (mod (add x x) (div y 0.722084)) (div (mod 0.537801 y) (div 0.193499 x)))))`
+
+<center><img alt="image of the kind of visual you'd see on the big screen behind the DJ at a rave, with blue prisms projected out of the horizon line and red beams and fireworks" src="examples/serpinski.png"></center>
+
+## NATO
+
+`f(x, y) = (rgb (div (mul (mul y x) (mul y x)) 0.371902) y x)`
+
+<center><img alt="image of a colorful compass-looking star" src="examples/nato.png"></center>
